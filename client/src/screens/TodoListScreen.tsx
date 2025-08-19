@@ -8,27 +8,58 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
 } from 'react-native'
 import withObservables from '@nozbe/with-observables'
 import { database } from '../database/db'
 import Todo from '../database/model/Todo'
 import TodoItem from '../components/TodoItem'
 import { sync } from '../database/syncManager'
+import Toast from 'react-native-toast-message'
 
 function TodoListScreen({ todos }: { todos: Todo[] }) {
   const [newTodo, setNewTodo] = useState('')
 
   const addTodo = async () => {
-    if (!newTodo.trim()) return
-    await database.write(async () => {
-      await database.get<Todo>('todos').create(todo => {
-        todo.title = newTodo
-        todo.is_done = false
-        todo.updated_at = Date.now()
-      })
+  if (!newTodo.trim()) return
+
+  // dismiss keyboard
+  Keyboard.dismiss()
+
+  // 🔍 check for duplicates (case-insensitive)
+  const existingTodos = await database.get<Todo>('todos').query().fetch()
+  const duplicate = existingTodos.find(
+    t => t.title.trim().toLowerCase() === newTodo.trim().toLowerCase()
+  )
+
+  if (duplicate) {
+    Toast.show({
+      type: 'error',
+      text1: `A todo with the title "${newTodo}" already exists!`,
     })
-    setNewTodo('')
+    setNewTodo('') // auto clear input
+    return
   }
+
+  // ✅ add if not duplicate
+  await database.write(async () => {
+    await database.get<Todo>('todos').create(todo => {
+      todo.title = newTodo
+      todo.is_done = false
+      todo.updated_at = Date.now()
+    })
+  })
+
+  setNewTodo('')
+  Toast.show({
+    type: 'success',
+    text1: 'Todo Added',
+    text2: `"${newTodo}" has been added!`,
+  })
+}
+
 
   const toggleTodo = async (todo: Todo) => {
     await database.write(async () => {
@@ -47,18 +78,22 @@ function TodoListScreen({ todos }: { todos: Todo[] }) {
 
   return (
     <SafeAreaView style={styles.container}>
+       <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Todos</Text>
-       <TouchableOpacity
-  onPress={() => {
-    console.log("Sync button pressed");
-    sync();
-  }}
-  style={styles.syncButton}
->
-  <Text style={styles.syncButtonText}>Sync</Text>
-</TouchableOpacity>
+       {/* <TouchableOpacity
+          onPress={() => {
+            console.log("Sync button pressed");
+            sync();
+          }}
+          style={styles.syncButton}
+        >
+          <Text style={styles.syncButtonText}>Sync</Text>
+        </TouchableOpacity> */}
 
       </View>
 
@@ -89,6 +124,7 @@ function TodoListScreen({ todos }: { todos: Todo[] }) {
         )}
         contentContainerStyle={styles.listContent}
       />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }

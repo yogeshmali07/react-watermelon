@@ -1,16 +1,25 @@
+// src/database/syncManager.js
 import { synchronize } from '@nozbe/watermelondb/sync'
 import { database } from './db'
 import { BASE_URL } from '../config'
 import Toast from 'react-native-toast-message'
 
+let isSyncing = false // 🔑 lock
+
 export async function sync() {
-  console.log('Sync is called')
+  if (isSyncing) {
+    console.log("⚠️ Sync already in progress, skipping...")
+    return
+  }
+
+  console.log('🔄 Sync started')
+  isSyncing = true
+
   try {
     await synchronize({
       database,
       pullChanges: async ({ lastPulledAt }) => {
         const url = `${BASE_URL}/sync/pull?lastPulledAt=${lastPulledAt || 0}`
-
         const response = await fetch(url)
         const { changes, timestamp } = await response.json()
         return { changes, timestamp }
@@ -22,20 +31,22 @@ export async function sync() {
           body: JSON.stringify(changes),
         })
       },
-      sendCreatedAsUpdated: true
-    })
-     Toast.show({
-      type: 'success',
-      text1: 'Sync Successful',
-      text2: 'Your local changes are now synced!'
     })
 
-  } catch (error) {
-    console.error(error.message);
+    Toast.show({
+      type: 'success',
+      text1: 'Sync Successful',
+      text2: 'Your local changes are now synced!',
+    })
+  } catch (error) {   // ✅ fixed
+    console.error("❌ Sync error:", error)
     Toast.show({
       type: 'error',
       text1: 'Sync Failed',
-      text2: error.message || 'Something went wrong'
+      text2: error.message || 'Something went wrong',
     })
+  } finally {
+    isSyncing = false
+    console.log('✅ Sync finished')
   }
 }

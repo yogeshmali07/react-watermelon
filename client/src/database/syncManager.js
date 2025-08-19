@@ -22,6 +22,7 @@ export async function sync() {
           body: JSON.stringify(changes),
         })
       },
+      sendCreatedAsUpdated: true
     })
      Toast.show({
       type: 'success',
@@ -30,6 +31,7 @@ export async function sync() {
     })
 
   } catch (error) {
+    console.error(error.message);
     Toast.show({
       type: 'error',
       text1: 'Sync Failed',

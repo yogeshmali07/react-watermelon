@@ -67,6 +67,7 @@ function TodoListScreen({ todos }: { todos: Todo[] }) {
         <TextInput
           value={newTodo}
           onChangeText={setNewTodo}
+          placeholderTextColor="#aaa"
           placeholder="Add a new task..."
           style={styles.input}
         />

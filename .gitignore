@@ -1,0 +1,19 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log
+yarn.lock
+package-lock.json
+
+# React Native / RN CLI
+client/node_modules/
+client/android/.gradle/
+client/android/app/build/
+client/ios/Pods/
+client/ios/Pods/**
+
+# Editor / OS
+.DS_Store
+.vscode
+.env
+*.env
